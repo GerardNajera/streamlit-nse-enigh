@@ -50,7 +50,7 @@ def reformular_pregunta(pregunta):
 # Mostrar advertencia al usuario
 st.info(f"""
 ℹ️ Las consultas como promedios o distribuciones serán reformuladas automáticamente para usar el factor de expansión: **'{ponderador_col}'**.
-No necesitas escribirlo manualmente.Los conteos se harán con la base natural
+No necesitas escribirlo manualmente.
 """)
 
 # Entrada de pregunta
