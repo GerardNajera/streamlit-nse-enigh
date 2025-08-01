@@ -1,6 +1,31 @@
+# Evita subir claves o configuraciones locales
 .env
-*.db
-__pycache__/
+*.env
+
+# Archivos de configuración personal
 *.pyc
+__pycache__/
 *.pyo
+*.pyd
+*.db
+
+# Editor y entorno
+.vscode/
+.idea/
+*.swp
+
+# Streamlit
 .streamlit/secrets.toml
+
+# Entorno virtual local
+venv/
+env/
+.venv/
+
+# Archivos de log o temporales
+*.log
+*.tmp
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
