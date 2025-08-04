@@ -29,3 +29,8 @@ env/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+*.ipynb_checkpoints/
+
+*.md~
+

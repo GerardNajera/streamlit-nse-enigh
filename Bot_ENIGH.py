@@ -20,7 +20,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Configuración Streamlit
 st.set_page_config(page_title="NIVELES SOCIECONÓMICOS 2024", layout="wide")
-st.title("📊 Consulta lo que deseas sobre los NSE 2024")
+st.title("📊🏘️ ENIGH 2024 - Equipamiento de los hogares, ingreso y gasto por principales rubros según NSE")
 
 # Conectar a la base SQLite creada previamente
 DB_PATH = "DB_ENIGH.db"
@@ -88,3 +88,21 @@ if st.session_state.historial:
     st.dataframe(df_hist)
 else:
     st.info("Aún no hay consultas registradas.")
+    
+# Sección de metodología
+st.divider()
+st.subheader("📘 Metodología")
+
+with st.expander("Ver detalles de la metodología utilizada"):
+    st.markdown("""
+    Esta herramienta se basa en la base de datos **ENIGH 2024**, publicada por el INEGI, 
+    que recopila información sobre ingresos, gastos y características de los hogares mexicanos.
+
+    **Fuente:**
+    - Encuesta Nacional de Ingresos y Gastos de los Hogares (ENIGH), 2024. INEGI
+    - La clasificación por nivel socioeconómico (NSE) fue generada a partir de cálculos realizados por el equipo de Planning Quant. 
+    - La aplicación utiliza inteligencia artificial basada en un agente conversacional desarrollado con LangChain y el modelo GPT-4o de OpenAI.
+
+    """)
+
+    
