@@ -34,3 +34,5 @@ Thumbs.db
 
 *.md~
 
+#Ignorar la base, la genero localmente
+*.db

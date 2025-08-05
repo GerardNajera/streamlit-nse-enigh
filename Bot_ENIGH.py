@@ -18,11 +18,11 @@ import pandas as pd
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Configuración Streamlit
+# Configuración de Streamlit
 st.set_page_config(page_title="NIVELES SOCIECONÓMICOS 2024", layout="wide")
-st.title("📊🏘️ ENIGH 2024 - Equipamiento de los hogares, ingreso y gasto por principales rubros según NSE")
+st.title("📊🏘️ ENIGH 2024 - Equipamiento de los hogares, ingreso y gasto por principales rubros según NSE")
 
-# Conectar a la base SQLite creada previamente
+# Conectar a la base SQLite
 DB_PATH = "DB_ENIGH.db"
 engine = create_engine(f"sqlite:///{DB_PATH}")
 db = SQLDatabase(engine=engine)
@@ -35,21 +35,54 @@ agent_executor = create_sql_agent(llm, db=db, agent_type="openai-tools", verbose
 if "historial" not in st.session_state:
     st.session_state.historial = []
 
-# Nombre de columna de ponderación
+# Nombre de la columna de ponderación
 ponderador_col = "Factor_expasion"
 
 def reformular_pregunta(pregunta):
     pregunta = pregunta.lower()
+    original = pregunta
 
-    # Lista de palabras clave para identificar diferentes tipos de preguntas
-    claves_promedio = ["media de", "promedio de", "ingreso promedio", "valor medio", "media", "promedio"]
+    # Periodicidad para ingreso o gasto
+    if "ingreso anual" in pregunta or "ingreso promedio anual" in pregunta or "gasto anual" in pregunta or "gasto promedio anual" in pregunta:
+        return (
+            f"{pregunta}. Recuerda calcular el ingreso o gasto anual a partir del valor mensual promedio, "
+            f"multiplicando el promedio ponderado mensual por 12. Es decir: "
+            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col}) * 12."
+        )
+    elif "ingreso quincenal" in pregunta or "ingreso promedio quincenal" in pregunta or "gasto quincenal" in pregunta or "gasto promedio quincenal" in pregunta:
+        return (
+            f"{pregunta}. Recuerda calcular el ingreso o gasto quincenal a partir del valor mensual promedio, "
+            f"dividiendo el promedio ponderado mensual entre 2. Es decir: "
+            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col}) / 2."
+        )
+    elif "ingreso trimestral" in pregunta or "ingreso promedio trimestral" in pregunta or "gasto trimestral" in pregunta or "gasto promedio trimestral" in pregunta:
+        return (
+            f"{pregunta}. Recuerda calcular el ingreso o gasto trimestral a partir del valor mensual promedio, "
+            f"multiplicando el promedio ponderado mensual por 3. Es decir: "
+            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col}) * 3."
+        )
+    elif "ingreso semanal" in pregunta or "ingreso promedio semanal" in pregunta or "gasto semanal" in pregunta or "gasto promedio semanal" in pregunta:
+        return (
+            f"{pregunta}. Recuerda calcular el ingreso o gasto semanal a partir del valor mensual promedio, "
+            f"dividiendo el promedio ponderado mensual entre 4.345. Es decir: "
+            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col}) / 4.345."
+        )
+    elif "ingreso diario" in pregunta or "ingreso promedio diario" in pregunta or "gasto diario" in pregunta or "gasto promedio diario" in pregunta:
+        return (
+            f"{pregunta}. Recuerda calcular el ingreso o gasto diario a partir del valor mensual promedio, "
+            f"dividiendo el promedio ponderado mensual entre 30.4. Es decir: "
+            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col}) / 30.4."
+        )
+
+    # Lógica para otros tipos de preguntas
+    claves_promedio = ["media de", "promedio de", "ingreso promedio", "gasto promedio", "valor medio", "media", "promedio"]
     claves_porcentaje = ["porcentaje", "proporción", "representa", "representación", "cuánto representa", "qué proporción"]
     claves_distribucion = ["distribución", "cómo se distribuye", "reparto", "segmentación"]
 
     if any(clave in pregunta for clave in claves_promedio):
         return (
             f"{pregunta}. Recuerda calcular el promedio ponderado como "
-            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col}), en lugar de usar AVG()."
+            f"SUM(variable * {ponderador_col}) / SUM({ponderador_col})."
         )
 
     elif any(clave in pregunta for clave in claves_porcentaje + claves_distribucion):
@@ -60,10 +93,12 @@ def reformular_pregunta(pregunta):
     return pregunta
 
 
-# Mostrar advertencia al usuario
+# Mensaje informativo
 st.info(f"""
 ℹ️ Las consultas como promedios o distribuciones serán reformuladas automáticamente para usar el factor de expansión: **'{ponderador_col}'**.
-No necesitas escribirlo manualmente.
+
+Además, todas las columnas numéricas se asumen en valores **mensuales**. Si preguntas por valores anuales, quincenales, semanales o diarios,
+la herramienta ajustará automáticamente el cálculo usando el **promedio ponderado mensual**.
 """)
 
 # Entrada de pregunta
@@ -88,21 +123,17 @@ if st.session_state.historial:
     st.dataframe(df_hist)
 else:
     st.info("Aún no hay consultas registradas.")
-    
+
 # Sección de metodología
 st.divider()
 st.subheader("📘 Metodología")
-
 with st.expander("Ver detalles de la metodología utilizada"):
-    st.markdown("""
+    st.markdown(f"""
     Esta herramienta se basa en la base de datos **ENIGH 2024**, publicada por el INEGI, 
     que recopila información sobre ingresos, gastos y características de los hogares mexicanos.
 
     **Fuente:**
-    - Encuesta Nacional de Ingresos y Gastos de los Hogares (ENIGH), 2024. INEGI
-    - La clasificación por nivel socioeconómico (NSE) fue generada a partir de cálculos realizados por el equipo de Planning Quant. 
+    - Encuesta Nacional de Ingresos y Gastos de los Hogares (ENIGH), 2024. INEGI.
+    - La clasificación por nivel socioeconómico (NSE) fue generada a partir de cálculos realizados por el equipo de Planning Quant.
     - La aplicación utiliza inteligencia artificial basada en un agente conversacional desarrollado con LangChain y el modelo GPT-4o de OpenAI.
-
     """)
-
-    
