@@ -19,8 +19,18 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Configuración de Streamlit
-st.set_page_config(page_title="NIVELES SOCIECONÓMICOS 2024", layout="wide")
+st.set_page_config(page_title="Consulta interactiva ENIGH 2024 por NSE", layout="wide")
 st.title("📊🏘️ ENIGH 2024 - Equipamiento de los hogares, ingreso y gasto por principales rubros según NSE")
+
+st.markdown("""
+Esta aplicación permite consultar de forma interactiva los datos de la **ENIGH 2024**, 
+enfocándose en **ingresos, gastos y equipamiento de los hogares mexicanos**, clasificados por **nivel socioeconómico (NSE)**.
+
+💡 Puedes preguntar por promedios, distribuciones o proporciones relacionadas con variables contenidas en la base de datos.  
+🔒 No puede responder preguntas fuera del contenido de la base, como el detalle metodológico completo del INEGI.  
+📊 Todos los cálculos se ajustan automáticamente utilizando el **factor de expansión** para asegurar representatividad estadística.
+""")
+
 
 # Conectar a la base SQLite
 DB_PATH = "DB_ENIGH.db"
@@ -93,19 +103,16 @@ def reformular_pregunta(pregunta):
     return pregunta
 
 
-# Mensaje informativo
-st.info(f"""
-ℹ️ Las consultas como promedios o distribuciones serán reformuladas automáticamente para usar el factor de expansión: **'{ponderador_col}'**.
-
-Además, todas las columnas numéricas se asumen en valores **mensuales**. Si preguntas por valores anuales, quincenales, semanales o diarios,
-la herramienta ajustará automáticamente el cálculo usando el **promedio ponderado mensual**.
-""")
-
 # Entrada de pregunta
-pregunta = st.text_area("Escribe tu consulta:", value="¿Cuál es el ingreso promedio mensual por nivel socioeconómico?")
+pregunta = st.text_area("Escribe tu consulta:", value="")
 if st.button("Responder"):
     with st.spinner("Consultando la base..."):
         pregunta_reformulada = reformular_pregunta(pregunta)
+        
+        # Modificación opcional: intentar eliminar LIMIT si el usuario quiere todo
+        if "todas" in pregunta.lower() or "todas las entidades" in pregunta.lower():
+            pregunta_reformulada = pregunta_reformulada.replace("LIMIT 10", "")
+
         respuesta = agent_executor.invoke({"input": pregunta_reformulada})
         st.session_state.historial.append({
             "Pregunta original": pregunta,
@@ -114,6 +121,7 @@ if st.button("Responder"):
         })
         st.success("Respuesta:")
         st.write(respuesta["output"])
+
 
 # Mostrar historial
 st.divider()
