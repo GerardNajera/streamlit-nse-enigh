@@ -123,6 +123,22 @@ if st.button("Responder"):
         st.write(respuesta["output"])
 
 
+if st.button("📥 Descargar base completa en CSV"):
+    with engine.connect() as conn:
+        tablas = conn.exec_driver_sql("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+        if tablas:
+            nombre_tabla = tablas[0][0]  # Usa la primera tabla encontrada
+            df_completa = pd.read_sql(f"SELECT * FROM {nombre_tabla}", conn)
+            csv_data = df_completa.to_csv(index=False)
+            st.download_button(
+                label="Descargar ENIGH 2024 (.csv)",
+                data=csv_data,
+                file_name="ENIGH_2024.csv",
+                mime="text/csv"
+            )
+        else:
+            st.error("No se encontraron tablas en la base de datos.")
+
 # Mostrar historial
 st.divider()
 st.subheader("🕓 Historial de consultas")
