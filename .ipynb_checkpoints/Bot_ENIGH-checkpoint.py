@@ -12,13 +12,6 @@ from sqlalchemy import create_engine
 from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts.chat import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    MessagesPlaceholder,
-)
 import pandas as pd
 
 # Cargar variables de entorno
@@ -45,46 +38,9 @@ DB_PATH = "DB_ENIGH.db"
 engine = create_engine(f"sqlite:///{DB_PATH}")
 db = SQLDatabase(engine=engine)
 
-# Definir prompt estructurado
-
-# Prompt personalizado estilo "investigador de mercados"
-prefix = """
-Eres un investigador de mercados especializado en encuestas socioeconómicas. 
-Tu tarea es ayudar a personas que en su mayoría no tienen conocimientos estadísticos ni de bases de datos. 
-
-Dispones de una base SQLite con información de la ENIGH 2024. 
-Siempre debes generar consultas SQL correctas y claras para responder la pregunta del usuario.
-
-Reglas que debes seguir SIEMPRE:
-- Todas las estimaciones deben ponderarse usando la columna `Factor_expansion`.  
-- Cuando calcules promedios: usa SUM(variable * Factor_expansion) / SUM(Factor_expansion).  
-- Cuando calcules proporciones o porcentajes: usa SUM(variable * Factor_expansion) / SUM(Factor_expansion) * 100 y entrega el resultado como porcentaje.  
-- Cuando se pregunten distribuciones, proporciones o segmentaciones, devuelve siempre el resultado en porcentaje.  
-- Responde siempre en español
-- Si te preguntan por información a nivel persona responde que la información disponible en la ENIGH 2024 es a nivel hogar  
-- Si la pregunta no está relacionada con la base, responde: "No lo sé con la información disponible en la ENIGH 2024".  
-
-Recuerda: debes expresarte con un lenguaje claro, accesible, y pensando en que el usuario no es experto en estadística ni en SQL.
-"""
-
-
-suffix = """
-Lo primero que debes hacer es revisar qué tablas hay en la base de datos y cuáles columnas son relevantes para responder. 
-Después construye la consulta SQL asegurándote de incluir la ponderación con `Factor_expansion`. 
-Si el resultado implica proporciones o porcentajes, devuélvelo en porcentaje y explícalo de forma sencilla.
-"""
-messages = [
-                SystemMessagePromptTemplate.from_template(prefix),
-                HumanMessagePromptTemplate.from_template("{input}"),
-                AIMessagePromptTemplate.from_template(suffix),
-                MessagesPlaceholder(variable_name="agent_scratchpad"),
-            ]
-
-prompt = ChatPromptTemplate.from_messages(messages)
-
-# Crear modelo y agente con prompt personalizado
+# Crear modelo y agente
 llm = ChatOpenAI(model="gpt-4o", temperature=0, openai_api_key=OPENAI_API_KEY)
-agent_executor = create_sql_agent(llm,db=db,agent_type="openai-tools",prompt=prompt,verbose=True)
+agent_executor = create_sql_agent(llm, db=db, agent_type="openai-tools", verbose=True)
 
 # Inicializar historial
 if "historial" not in st.session_state:
